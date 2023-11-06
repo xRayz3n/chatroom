@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Optional
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -8,31 +8,30 @@ app = FastAPI()
 
 chatrooms = {}
 
+class Message(BaseModel):
+    sender: str = Field(...,example="ILuvUnicorns")
+    message: str = Field(...,example="unicorns are amazing")
+    
+class Chatroom(BaseModel):
+    name: str = Field(...,example="Unicorn enthusiasts")
+    description: Optional[str] = Field(None, example="Talk about your dream unicorn")
+    messages: List[Message] = []
+
+
 class Chatroom:
     def __init__(self, desc: str, room_name: str):
         self.desc = desc
         self.room_name = room_name
-        self.users = [User]
         self.messages = []
-
-class User:
-    def __init__(self, userId: int, name: str):
-        self.userId = userId
-        self.name = name
-
-class Message:
-    def __init__(self, content: str, user: User):
-        self.content = content
-        self.user = user
 
 # Create a chatroom
 @app.post("/chatrooms", status_code=status.HTTP_201_CREATED)
-def create_chatroom(name: str, description: str = ""):
-    if name in chatrooms:
+def create_chatroom(chatroom: Chatroom):
+    if chatroom.name in chatrooms:
         raise HTTPException(status_code=400, detail="Chatroom already exists")
     
-    chatrooms[name] = Chatroom(name, description)
-    return("Chatroom created")
+    chatrooms[chatroom.name] = chatroom
+    return(f"Chatroom {chatroom.name} created")
     
 # List Chatrooms
 @app.get("/chatrooms")
@@ -42,11 +41,11 @@ def get_chatrooms():
 
 # Send a message
 @app.post("/chatrooms/{chatroom_name}/messages", status_code=status.HTTP_201_CREATED)
-def post_message(chatroom_name: str, sender: str, message: str):
+def post_message(chatroom_name: str, message: Message):
     if chatroom_name not in chatrooms:
         raise HTTPException(status_code=404, detail="Chatroom not found")
     
-    chatrooms[chatroom_name].messages.append((sender, message))
+    chatrooms[chatroom_name].messages.append((message.sender, message.message))
     return {"detail": "Message added"}
 
 # Get the list of messages
