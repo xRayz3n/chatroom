@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Union, List, Dict, Optional
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
